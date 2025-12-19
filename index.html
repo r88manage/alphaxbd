@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;800;900&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700;900&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box}
@@ -21,13 +21,16 @@ body{
 }
 
 /* ======================
-   背景
+   背景图（只提亮，不换图）
 ====================== */
 .bg{
   position:fixed; inset:0;
   background:url("./bg-desktop-1920x1080.jpg") center/cover no-repeat;
   transform:scale(1.06);
-  filter:brightness(1.22) contrast(1.06) saturate(1.15);
+  filter:
+    brightness(1.22)
+    contrast(1.06)
+    saturate(1.15);
   animation:bgFloat 16s ease-in-out infinite alternate;
   z-index:-5;
 }
@@ -43,17 +46,19 @@ body{
   to{transform:scale(1.11) translate(-1.2%,-1.2%)}
 }
 
+/* 暗角 */
 .vignette{
   position:fixed; inset:0;
   background:radial-gradient(
     ellipse at 50% 35%,
-    rgba(0,0,0,0),
+    rgba(0,0,0,.0),
     rgba(0,0,0,.42) 70%,
     rgba(0,0,0,.70)
   );
   z-index:-4;
 }
 
+/* 星空 Canvas */
 #fx{
   position:fixed; inset:0;
   pointer-events:none;
@@ -69,16 +74,27 @@ body{
   flex-direction:column;
   justify-content:space-between;
   align-items:center;
-  padding:max(28px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom));
+  padding:
+    max(28px,env(safe-area-inset-top))
+    18px
+    max(28px,env(safe-area-inset-bottom));
 }
 
-.top{text-align:center;margin-top:3vh}
+.top{
+  text-align:center;
+  margin-top:3vh;
+}
 h1{
   margin:0;
   font-size:clamp(28px,5vw,56px);
   font-weight:900;
   letter-spacing:.08em;
-  background:linear-gradient(90deg,#fff,#cfefff,#e0d2ff);
+  background:linear-gradient(
+    90deg,
+    #ffffff,
+    #cfefff,
+    #e0d2ff
+  );
   -webkit-background-clip:text;
   color:transparent;
 }
@@ -88,13 +104,22 @@ h1{
   letter-spacing:.28em;
   opacity:.9;
 }
-.sub b{font-family:"Orbitron","Noto Sans Bengali";font-weight:800}
+.sub b{
+  font-family:"Orbitron","Noto Sans Bengali";
+  font-weight:800;
+}
 
-.bottom{width:min(520px,92vw)}
+.bottom{
+  width:min(520px,92vw);
+}
 .dock{
   padding:18px;
   border-radius:26px;
-  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03));
+  background:linear-gradient(
+    180deg,
+    rgba(255,255,255,.10),
+    rgba(255,255,255,.03)
+  );
   border:1px solid rgba(255,255,255,.12);
   backdrop-filter:blur(12px);
   box-shadow:0 24px 70px rgba(0,0,0,.55);
@@ -122,32 +147,28 @@ h1{
   text-align:center;
 }
 
-/* ======================
-   点击爆裂
-====================== */
+/* 点击爆裂 */
 #burst{
-  position:fixed; inset:0;
+  position:fixed;
+  inset:0;
   pointer-events:none;
-  z-index:20;
+  z-index:999;
   opacity:0;
 }
 #burst.active{opacity:1}
 #burst .p{
   position:absolute;
   border-radius:999px;
-  background:#fff;
+  background:rgba(255,255,255,.95);
   box-shadow:0 0 18px rgba(160,210,255,.75);
+  transform:translate3d(var(--x0),var(--y0),0);
   animation:burstMove 900ms ease-out forwards;
 }
 @keyframes burstMove{
-  from{opacity:1}
-  to{opacity:0;transform:translate(var(--x1),var(--y1)) scale(.25)}
-}
-
-body.disintegrate .wrap{
-  transform:scale(1.02);
-  filter:brightness(1.08);
-  transition:1.05s;
+  to{
+    transform:translate3d(var(--x1),var(--y1),0) scale(.25);
+    opacity:0;
+  }
 }
 </style>
 </head>
@@ -161,14 +182,13 @@ body.disintegrate .wrap{
 <div class="wrap">
   <div class="top">
     <h1>আপনার যাত্রা শুরু হচ্ছে এই মুহূর্ত থেকেই</h1>
-    <div class="sub"><b>ALPHA X</b> মহাবিশ্বে এক ধাপ এগিয়ে যান।</div>
+    <div class="sub">এক ধাপে প্রবেশ করুন <b>ALPHA X</b> মহাবিশ্বে</div>
   </div>
 
   <div class="bottom">
     <div class="dock">
-      <!-- 🔥 唯一修改：这里 -->
       <a id="enterBtn" class="enter" href="https://alphaxbd.win">
-        <span>ALPHA&nbsp;X-এ প্রবেশ করুন</span>
+        <span>ALPHA&nbsp;X-এ&nbsp;প্রবেশ&nbsp;করুন</span>
       </a>
       <div class="hint">প্রবেশ করতে ক্লিক করুন</div>
     </div>
@@ -176,9 +196,7 @@ body.disintegrate .wrap{
 </div>
 
 <script>
-/* =========================
-   A) 星空粒子（原样保留）
-========================= */
+/* 星空粒子（原样） */
 const c=document.getElementById('fx'),ctx=c.getContext('2d',{alpha:true});
 let W=0,H=0,DPR=1;
 function resize(){
@@ -192,15 +210,17 @@ addEventListener('resize',resize);resize();
 
 const N=matchMedia('(max-width:768px)').matches?80:140;
 const particles=[...Array(N)].map(()=>makeP(true));
-function makeP(init){
+function makeP(initial){
   const p={x:Math.random()*W,y:Math.random()*H,r:.6+Math.random()*1.8,
   vx:-.12+Math.random()*.24,vy:-.1+Math.random()*.2,
   a:.25+Math.random()*.55,tw:.004+Math.random()*.012,
-  hue:Math.random()<.55?'c':'v'};
-  if(!init){
+  hue:Math.random()<.55?'cyan':'violet'};
+  if(!initial){
     const s=Math.floor(Math.random()*4);
-    if(s==0)p.x=-10;if(s==1)p.x=W+10;
-    if(s==2)p.y=-10;if(s==3)p.y=H+10;
+    if(s===0){p.x=-10;p.y=Math.random()*H}
+    if(s===1){p.x=W+10;p.y=Math.random()*H}
+    if(s===2){p.x=Math.random()*W;p.y=-10}
+    if(s===3){p.x=Math.random()*W;p.y=H+10}
   }
   return p;
 }
@@ -210,18 +230,18 @@ function makeP(init){
   particles.forEach((p,i)=>{
     p.x+=p.vx;p.y+=p.vy;p.a+=(Math.random()-.5)*p.tw;
     const a=Math.max(.08,Math.min(.85,p.a));
-    const g=p.hue=='c'?'rgba(120,220,255,':'rgba(180,110,255,';
-    ctx.fillStyle=g+(a*.55)+')';
-    ctx.beginPath();ctx.arc(p.x,p.y,p.r*2.3,0,Math.PI*2);ctx.fill();
+    const glow=p.hue==='cyan'?'rgba(120,220,255,':'rgba(180,110,255,';
+    ctx.beginPath();
+    ctx.fillStyle=glow+(a*.55)+')';
+    ctx.arc(p.x,p.y,p.r*2.3,0,Math.PI*2);
+    ctx.fill();
     if(p.x<-60||p.x>W+60||p.y<-60||p.y>H+60)particles[i]=makeP();
   });
   ctx.globalCompositeOperation='source-over';
   requestAnimationFrame(draw);
 })();
 
-/* =========================
-   B) 点击爆裂 + 跳转（保留）
-========================= */
+/* 点击爆裂 + 跳转 */
 const btn=document.getElementById('enterBtn');
 const burst=document.getElementById('burst');
 btn.addEventListener('click',e=>{
@@ -236,13 +256,14 @@ btn.addEventListener('click',e=>{
     const d=150+Math.random()*350;
     p.style.left=r.left+r.width/2+'px';
     p.style.top=r.top+r.height/2+'px';
+    p.style.setProperty('--x0','0px');
+    p.style.setProperty('--y0','0px');
     p.style.setProperty('--x1',Math.cos(a)*d+'px');
     p.style.setProperty('--y1',Math.sin(a)*d+'px');
     const s=3+Math.random()*6;
     p.style.width=s+'px';p.style.height=s+'px';
     burst.appendChild(p);
   }
-  document.body.classList.add('disintegrate');
   setTimeout(()=>location.href=btn.href,1100);
 });
 </script>
