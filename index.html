@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-HK">
+<html lang="bn">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;800;900&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box}
@@ -17,7 +17,7 @@ body{
   background:#02020a;
   color:#fff;
   overflow:hidden;
-  font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto;
+  font-family:"Noto Sans Bengali",system-ui,-apple-system,Segoe UI,Roboto;
 }
 
 /* ======================
@@ -105,7 +105,7 @@ h1{
   opacity:.9;
 }
 .sub b{
-  font-family:"Orbitron","Noto Sans TC";
+  font-family:"Orbitron","Noto Sans Bengali";
   font-weight:800;
 }
 
@@ -146,6 +146,39 @@ h1{
   letter-spacing:.22em;
   text-align:center;
 }
+
+/* ======================
+   点击爆裂 + 解体（补齐缺失元素用的样式）
+====================== */
+#burst{
+  position:fixed; inset:0;
+  pointer-events:none;
+  z-index:20;
+  opacity:0;
+  transition:opacity .15s ease;
+}
+#burst.active{ opacity:1; }
+
+#burst .p{
+  position:absolute;
+  border-radius:999px;
+  background:rgba(255,255,255,.95);
+  box-shadow:0 0 18px rgba(160,210,255,.75);
+  transform:translate3d(var(--x0),var(--y0),0) scale(1);
+  animation:burstMove 900ms ease-out forwards;
+}
+
+@keyframes burstMove{
+  0%   { transform:translate3d(var(--x0),var(--y0),0) scale(1); opacity:1; }
+  100% { transform:translate3d(var(--x1),var(--y1),0) scale(.25); opacity:0; }
+}
+
+/* 轻量“解体”感：整体微缩 + 亮度上升 */
+body.disintegrate .wrap{
+  transform:scale(1.02);
+  filter:brightness(1.08);
+  transition:transform 1.05s ease, filter 1.05s ease;
+}
 </style>
 </head>
 
@@ -154,162 +187,165 @@ h1{
 <div class="vignette"></div>
 <canvas id="fx"></canvas>
 
+<!-- 爆裂容器（原代码 JS 有用到，这里补上避免报错） -->
+<div id="burst"></div>
+
 <div class="wrap">
   <div class="top">
-    <h1>你嘅旅程，由呢一刻開始</h1>
-    <div class="sub">一步踏入 <b>ALPHA X</b> 宇宙。</div>
+    <h1>আপনার যাত্রা শুরু হচ্ছে এই মুহূর্ত থেকেই</h1>
+    <div class="sub"><b>ALPHA X</b> মহাবিশ্বে এক ধাপ এগিয়ে যান।</div>
   </div>
 
   <div class="bottom">
     <div class="dock">
-      <a class="enter" href="https://alphaxhk.win">
-        <span>進入&nbsp;ALPHA&nbsp;X</span>
+      <a id="enterBtn" class="enter" href="https://alphaxhk.win">
+        <span>ALPHA&nbsp;X-এ প্রবেশ করুন</span>
       </a>
-      <div class="hint">點擊進入</div>
+      <div class="hint">প্রবেশ করতে ক্লিক করুন</div>
     </div>
   </div>
 </div>
 
 <script>
-    /* =========================
-       A) 持续动态光粒（Canvas）
-       ========================= */
-    const c = document.getElementById('fx');
-    const ctx = c.getContext('2d', { alpha: true });
+  /* =========================
+     A) 持续动态光粒（Canvas）
+     ========================= */
+  const c = document.getElementById('fx');
+  const ctx = c.getContext('2d', { alpha: true });
 
-    let W = 0, H = 0, DPR = 1;
-    function resize(){
-      DPR = Math.min(2, window.devicePixelRatio || 1);
-      W = Math.floor(window.innerWidth);
-      H = Math.floor(window.innerHeight);
-      c.width  = Math.floor(W * DPR);
-      c.height = Math.floor(H * DPR);
-      c.style.width = W + 'px';
-      c.style.height = H + 'px';
-      ctx.setTransform(DPR,0,0,DPR,0,0);
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.floor(window.innerWidth);
+    H = Math.floor(window.innerHeight);
+    c.width  = Math.floor(W * DPR);
+    c.height = Math.floor(H * DPR);
+    c.style.width = W + 'px';
+    c.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const isMobile = matchMedia('(max-width: 768px)').matches;
+  const N = isMobile ? 80 : 140;
+
+  const particles = Array.from({length:N}, ()=>makeP(true));
+  function makeP(initial=false){
+    const p = {
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: 0.6 + Math.random()*1.8,
+      vx: (-0.12 + Math.random()*0.24),
+      vy: (-0.10 + Math.random()*0.20),
+      a: 0.25 + Math.random()*0.55,
+      tw: 0.004 + Math.random()*0.012,
+      hue: Math.random() < 0.55 ? 'cyan' : 'violet'
+    };
+    if(!initial){
+      // 从边缘刷入更自然
+      const side = Math.floor(Math.random()*4);
+      if(side===0){ p.x=-10; p.y=Math.random()*H; }
+      if(side===1){ p.x=W+10; p.y=Math.random()*H; }
+      if(side===2){ p.x=Math.random()*W; p.y=-10; }
+      if(side===3){ p.x=Math.random()*W; p.y=H+10; }
     }
-    window.addEventListener('resize', resize);
-    resize();
+    return p;
+  }
 
-    const isMobile = matchMedia('(max-width: 768px)').matches;
-    const N = isMobile ? 80 : 140;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
 
-    const particles = Array.from({length:N}, ()=>makeP(true));
-    function makeP(initial=false){
-      const p = {
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: 0.6 + Math.random()*1.8,
-        vx: (-0.12 + Math.random()*0.24),
-        vy: (-0.10 + Math.random()*0.20),
-        a: 0.25 + Math.random()*0.55,
-        tw: 0.004 + Math.random()*0.012,
-        hue: Math.random() < 0.55 ? 'cyan' : 'violet'
-      };
-      if(!initial){
-        // 从边缘刷入更自然
-        const side = Math.floor(Math.random()*4);
-        if(side===0){ p.x=-10; p.y=Math.random()*H; }
-        if(side===1){ p.x=W+10; p.y=Math.random()*H; }
-        if(side===2){ p.x=Math.random()*W; p.y=-10; }
-        if(side===3){ p.x=Math.random()*W; p.y=H+10; }
+    // 柔光叠加：更“霓虹”
+    ctx.globalCompositeOperation = 'lighter';
+
+    for(let i=0;i<particles.length;i++){
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.a += (Math.random()-0.5)*p.tw;
+
+      // 轻微闪烁
+      const alpha = Math.max(0.08, Math.min(0.85, p.a));
+      const glow = p.hue==='cyan' ? 'rgba(120,220,255,' : 'rgba(180,110,255,';
+      const core = 'rgba(255,255,255,';
+
+      // 绘制：外光 + 核心
+      ctx.beginPath();
+      ctx.fillStyle = glow + (alpha*0.35) + ')';
+      ctx.arc(p.x, p.y, p.r*4.2, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = glow + (alpha*0.55) + ')';
+      ctx.arc(p.x, p.y, p.r*2.3, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = core + (alpha*0.75) + ')';
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+
+      // 出界重生
+      if(p.x < -60 || p.x > W+60 || p.y < -60 || p.y > H+60){
+        particles[i] = makeP(false);
       }
-      return p;
     }
 
-    function draw(){
-      ctx.clearRect(0,0,W,H);
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(draw);
+  }
+  draw();
 
-      // 柔光叠加：更“霓虹”
-      ctx.globalCompositeOperation = 'lighter';
+  /* =========================
+     B) 点击爆裂 + 解体 + 跳转
+     ========================= */
+  const btn = document.getElementById('enterBtn');
+  const burst = document.getElementById('burst');
 
-      for(let i=0;i<particles.length;i++){
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.a += (Math.random()-0.5)*p.tw;
+  function spawnBurst(x, y, count = 100){
+    burst.classList.add('active');
+    burst.innerHTML = "";
 
-        // 轻微闪烁
-        const alpha = Math.max(0.08, Math.min(0.85, p.a));
-        const glow = p.hue==='cyan' ? 'rgba(120,220,255,' : 'rgba(180,110,255,';
-        const core = 'rgba(255,255,255,';
+    for(let i=0;i<count;i++){
+      const p = document.createElement('div');
+      p.className = 'p';
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 140 + Math.random() * 420;
+      const x1 = x + Math.cos(angle) * radius;
+      const y1 = y + Math.sin(angle) * radius;
 
-        // 绘制：外光 + 核心
-        ctx.beginPath();
-        ctx.fillStyle = glow + (alpha*0.35) + ')';
-        ctx.arc(p.x, p.y, p.r*4.2, 0, Math.PI*2);
-        ctx.fill();
+      p.style.left = x + "px";
+      p.style.top  = y + "px";
+      p.style.setProperty('--x0','0px');
+      p.style.setProperty('--y0','0px');
+      p.style.setProperty('--x1',(x1-x)+'px');
+      p.style.setProperty('--y1',(y1-y)+'px');
 
-        ctx.beginPath();
-        ctx.fillStyle = glow + (alpha*0.55) + ')';
-        ctx.arc(p.x, p.y, p.r*2.3, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.fillStyle = core + (alpha*0.75) + ')';
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-        ctx.fill();
-
-        // 出界重生
-        if(p.x < -60 || p.x > W+60 || p.y < -60 || p.y > H+60){
-          particles[i] = makeP(false);
-        }
-      }
-
-      ctx.globalCompositeOperation = 'source-over';
-      requestAnimationFrame(draw);
+      const s = 3 + Math.random() * 7;
+      p.style.width = s + "px";
+      p.style.height = s + "px";
+      burst.appendChild(p);
     }
-    draw();
 
-    /* =========================
-       B) 点击爆裂 + 解体 + 跳转
-       ========================= */
-    const btn = document.getElementById('enterBtn');
-    const burst = document.getElementById('burst');
-
-    function spawnBurst(x, y, count = 100){
-      burst.classList.add('active');
+    setTimeout(()=>{
+      burst.classList.remove('active');
       burst.innerHTML = "";
+    }, 1000);
+  }
 
-      for(let i=0;i<count;i++){
-        const p = document.createElement('div');
-        p.className = 'p';
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 140 + Math.random() * 420;
-        const x1 = x + Math.cos(angle) * radius;
-        const y1 = y + Math.sin(angle) * radius;
+  btn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const rect = btn.getBoundingClientRect();
+    const x = rect.left + rect.width/2;
+    const y = rect.top + rect.height/2;
 
-        p.style.left = x + "px";
-        p.style.top  = y + "px";
-        p.style.setProperty('--x0','0px');
-        p.style.setProperty('--y0','0px');
-        p.style.setProperty('--x1',(x1-x)+'px');
-        p.style.setProperty('--y1',(y1-y)+'px');
+    spawnBurst(x, y, window.innerWidth < 768 ? 80 : 130);
+    document.body.classList.add('disintegrate');
 
-        const s = 3 + Math.random() * 7;
-        p.style.width = s + "px";
-        p.style.height = s + "px";
-        burst.appendChild(p);
-      }
-
-      setTimeout(()=>{
-        burst.classList.remove('active');
-        burst.innerHTML = "";
-      }, 1000);
-    }
-
-    btn.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const rect = btn.getBoundingClientRect();
-      const x = rect.left + rect.width/2;
-      const y = rect.top + rect.height/2;
-
-      spawnBurst(x, y, window.innerWidth < 768 ? 80 : 130);
-      document.body.classList.add('disintegrate');
-
-      const href = btn.getAttribute('href');
-      setTimeout(()=>{ window.location.href = href; }, 1100);
-    }, {passive:false});
-  </script>
+    const href = btn.getAttribute('href');
+    setTimeout(()=>{ window.location.href = href; }, 1100);
+  }, {passive:false});
+</script>
 </body>
 </html>
